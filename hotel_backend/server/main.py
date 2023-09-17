@@ -4,7 +4,7 @@ import time
 from datetime import datetime
 
 import pytz
-from fastapi import FastAPI, Request, status
+from fastapi import FastAPI, Request, status, Depends
 from fastapi.encoders import jsonable_encoder
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
@@ -13,6 +13,7 @@ from fastapi.responses import JSONResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from mangum import Mangum
 
+from .dependencies.functional import x_api_token_authorize
 from .routes import auth, employee, guest, order
 
 app = FastAPI(
@@ -29,7 +30,29 @@ os.makedirs(st_abs_file_path, exist_ok=True)
 app.mount('/static', StaticFiles(directory=st_abs_file_path), name='static')
 
 description = """
-Hotel Document APIs Service. 👋🏻
+Welcome to the Hotel Property Management 👋 API documentation. This API allows you to manage work orders in a hotel property management system.
+
+## Authentication
+
+To use this API, you may need to authenticate. The API supports API Key authentication. Contact your system administrator to obtain an API Key for access.
+
+## Authorization
+
+To authorize your requests, include your API Key and Oauth2 in the headers:
+
+```
+x-api-key: YOUR_API_KEY
+Authorization: Bearer YOUR_TOKEN
+```
+
+## Get Started
+
+To get started, you can use the following endpoints:
+
+- `/api/docs`: Interactive API documentation (you are here!)
+- `/api/redoc`: API documentation in a more readable format
+
+Feel free to explore and test the API endpoints using the provided documentation.
 """
 
 origins = [
@@ -57,18 +80,21 @@ app.include_router(
 
 app.include_router(
     order.router,
+    dependencies=[Depends(x_api_token_authorize)],
     prefix='/order',
     tags=['work-order']
 )
 
 app.include_router(
     employee.router,
+    dependencies=[Depends(x_api_token_authorize)],
     prefix='/employee',
     tags=['employee']
 )
 
 app.include_router(
     guest.router,
+    dependencies=[Depends(x_api_token_authorize)],
     prefix='/guest',
     tags=['guest']
 )
@@ -81,7 +107,7 @@ async def not_found_404():
 
     :return:
     """
-    return {'message': 'Not found page.'}
+    return {'detail': 'Not Found'}
 
 
 def customer_openapi():
