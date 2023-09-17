@@ -39,7 +39,7 @@ class RegisterEmployee(BaseModel):
         description='Number tel.'
     )
     position: Optional[str] = None
-    role: Optional[str] = 'Employee'
+    role: Optional[str] = 'employee'
     disabled: Union[bool, None] = False
     logged: Optional[bool] = False
     date: Union[datetime, None] = None
@@ -55,6 +55,7 @@ class RegisterEmployee(BaseModel):
                 'lastname': 'weraborirak',
                 'nickname': 'kane',
                 'tel': '0941499661',
+                'position': 'Technician',
                 'role': 'supervisor',
             }
         }
@@ -67,15 +68,15 @@ class RegisterEmployee(BaseModel):
 
 
 class UpdateEmployee(BaseModel):
-    uid: UUID4 = Field(default_factory=uuid4)
-    username: str
-    firstname: str = Field(
+    uid: str
+    username: Optional[str] = None
+    firstname: Optional[str] = Field(
         ...,
         regex='^(?![0-9._])(?!.*[._]$)(?!.*\d_)(?!.*_\d)[a-zA-Z]+$',
         description='Allow only alphabetic eng character'
     )
-    lastname: str = Field(
-        ...,
+    lastname: Optional[str] = Field(
+        None,
         regex='^(?![0-9._])(?!.*[._]$)(?!.*\d_)(?!.*_\d)[a-zA-Z]+$',
         description='Allow only alphabetic eng character'
     )
@@ -84,8 +85,8 @@ class UpdateEmployee(BaseModel):
         regex='^(?![0-9._])(?!.*[._]$)(?!.*\d_)(?!.*_\d)[a-zA-Z ]+$',
         description='Allow only alphabetic eng character'
     )
-    tel: str = Field(
-        ...,
+    tel: Optional[str] = Field(
+        None,
         regex='^\\+?[0-9][0-9]{7,14}$',
         description='Number tel.'
     )
@@ -104,6 +105,7 @@ class UpdateEmployee(BaseModel):
                 'lastname': 'weraborirak',
                 'nickname': 'kane',
                 'tel': '0941499661',
+                'position': 'Technician',
                 'role': 'supervisor',
             }
         }

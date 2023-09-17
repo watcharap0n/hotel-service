@@ -17,9 +17,9 @@ class RegisterGuest(BaseModel):
         regex='^(?![0-9._])(?!.*[._]$)(?!.*\d_)(?!.*_\d)[a-z0-9_.]+$',
         description='Allow only alphabetic eng character & number endswith.'
     )
-    hashedPassword: str
+    password: str
     numberRoom: str
-    role: Optional[str] = 'Guest'
+    role: Optional[str] = 'guest'
     logged: Optional[bool] = False
     date: Union[datetime, None] = None
 
@@ -30,7 +30,7 @@ class RegisterGuest(BaseModel):
             'example': {
                 'username': '101',
                 'numberRoom': '101',
-                'hashedPassword': 'secret',
+                'password': 'secret',
                 'role': 'supervisor',
             }
         }
@@ -45,6 +45,25 @@ class RegisterGuest(BaseModel):
         tz = pytz.timezone('Asia/Bangkok')
         dt = datetime.now(tz)
         return dt
+
+
+class UpdateGuest(BaseModel):
+    uid: str
+    username: Optional[str] = None
+    password: Optional[str] = None
+    numberRoom: Optional[str] = None
+
+    class Config:
+        arbitrary_types_allowed = True
+        json_encoders = {ObjectId: str}
+
+        schema_extra = {
+            'example': {
+                'username': 'dev',
+                'password': 'secret',
+                'numberRoo': '102',
+            }
+        }
 
 
 class Guest(BaseModel):

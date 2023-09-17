@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Union, List
+from typing import Union, List, Optional
 
 import pytz
 from bson import ObjectId
@@ -25,7 +25,7 @@ class TableListOrder(BaseModel):
     counts: int
     skip: int
     limit: int
-    guests: Union[List[BaseWorkOrder], None] = []
+    orders: Union[List[BaseWorkOrder], None] = []
 
 
 class CreateBaseWorkOrder(BaseModel):
@@ -70,13 +70,12 @@ class CreateBaseWorkOrder(BaseModel):
 
 
 class UpdateBySupervisorBaseWorkOrder(BaseModel):
-    workOrderNumber: str
     assignedTo: Employee
-    numberRoom: str
-    started: datetime
-    finished: datetime
-    type: str
-    status: str
+    numberRoom: Optional[str] = None
+    started: Optional[str] = None
+    finished: Optional[str] = None
+    type: Optional[str] = None
+    status: Optional[str] = None
 
     class Config:
         arbitrary_types_allowed = True

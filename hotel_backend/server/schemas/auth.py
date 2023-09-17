@@ -17,8 +17,8 @@ class TokenData(BaseModel):
 
 
 class EmployeeInDB(Employee):
-    hashed_password: str
+    hashedPassword: str
 
 
 class GuestInDB(Guest):
-    hashed_password: str
+    hashedPassword: str
