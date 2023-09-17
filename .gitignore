@@ -1,0 +1,10 @@
+*.ipynb_checkpoints
+*__pycache__
+hotel_backend/etc
+hotel_backend/server/static/log
+hotel_backend/db/data
+*.idea
+Pipfile
+Pipfile.lock
+*.http
+hotel_backend/server/etc
