@@ -1,11 +1,11 @@
 from typing import List
 
-from fastapi import APIRouter, Query, Depends, Path, status, HTTPException
+from fastapi import APIRouter, Query, Depends, Path, status as _status, HTTPException
 from fastapi.encoders import jsonable_encoder
 from fastapi.responses import JSONResponse
 
+from .auth import get_current_active_supervisor, get_current_active_guest, get_current_active_group
 from ..db import db
-from ..dependencies.functional import get_current_active_supervisor, get_current_active_guest
 from ..schemas.order import TableListOrder, BaseWorkOrder, UpdateBySupervisorBaseWorkOrder, UpdateByGuestBaseWorkOrder
 from ..schemas.user import User
 
@@ -20,6 +20,7 @@ async def find_orders(
         status: List[str] = Query(None, description="Filter by status"),
         order_type: List[str] = Query(None, description="Filter by order type"),
         room: List[str] = Query(None, description="Filter by room"),
+        current_user: User = Depends(get_current_active_group)
 ):
     """
     The find orders in query condition below here:
@@ -39,12 +40,22 @@ async def find_orders(
     if room:
         query["room"] = {"$in": room}
 
-    result = await db.find(collection=COLLECTION, query=query).skip(skip).limit(limit)
+    total_count = db.get_collection_countable(collection=COLLECTION, query=query)
+    result = await db.find(collection=COLLECTION, query=query)
+    result = result.skip(skip).limit(limit)
     orders = [order for order in result]
+    orders = {
+        'counts': total_count,
+        'skip': skip,
+        'limit': limit,
+        'orders': orders
+    }
+    if not orders:
+        raise HTTPException(status_code=_status.HTTP_404_NOT_FOUND, detail='Not found item.')
     return orders
 
 
-@router.post('/create-supervisor', response_model=BaseWorkOrder, status_code=status.HTTP_201_CREATED)
+@router.post('/create-supervisor', response_model=BaseWorkOrder, status_code=_status.HTTP_201_CREATED)
 async def create_work_order_by_supervisor(payload: BaseWorkOrder,
                                           current_user: User = Depends(get_current_active_supervisor)):
     """
@@ -77,29 +88,12 @@ async def update_order_by_supervisor(payload: UpdateBySupervisorBaseWorkOrder,
             collection=COLLECTION,
             query=query,
             values=values)) == 0:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST,
+        raise HTTPException(status_code=_status.HTTP_400_BAD_REQUEST,
                             detail=f'Not found {order_id} or update already exits.')
     return item_model
 
 
-@router.delete('/revoke/{order_id}', status_code=status.HTTP_204_NO_CONTENT)
-async def revoke_order(order_id: str = Path(title='delete order in database-collection'),
-                       current_user: User = Depends(get_current_active_supervisor)):
-    """
-
-    :param order_id:
-    :return:
-    """
-
-    if (await db.delete_one(collection=COLLECTION, query={'_id': order_id})) == 0:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"order is not found {order_id}."
-        )
-    return JSONResponse(status_code=status.HTTP_204_NO_CONTENT, content={'status': 'success'})
-
-
-@router.post('/create-guest', response_model=BaseWorkOrder, status_code=status.HTTP_201_CREATED)
+@router.post('/create-guest', response_model=BaseWorkOrder, status_code=_status.HTTP_201_CREATED)
 async def create_work_order_by_supervisor(payload: BaseWorkOrder,
                                           current_user: User = Depends(get_current_active_guest)):
     """
@@ -132,6 +126,23 @@ async def update_order_by_supervisor(payload: UpdateByGuestBaseWorkOrder,
             collection=COLLECTION,
             query=query,
             values=values)) == 0:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST,
+        raise HTTPException(status_code=_status.HTTP_400_BAD_REQUEST,
                             detail=f'Not found {order_id} or update already exits.')
     return item_model
+
+
+@router.delete('/revoke/{order_id}', status_code=_status.HTTP_204_NO_CONTENT)
+async def revoke_order(order_id: str = Path(title='delete order in database-collection'),
+                       current_user: User = Depends(get_current_active_supervisor)):
+    """
+
+    :param order_id:
+    :return:
+    """
+
+    if (await db.delete_one(collection=COLLECTION, query={'_id': order_id})) == 0:
+        raise HTTPException(
+            status_code=_status.HTTP_400_BAD_REQUEST,
+            detail=f"order is not found {order_id}."
+        )
+    return JSONResponse(status_code=_status.HTTP_204_NO_CONTENT, content={'status': 'success'})

@@ -2,7 +2,7 @@ import os
 from datetime import datetime, timedelta
 from typing import Union
 
-from fastapi import (APIRouter, HTTPException, status, Depends)
+from fastapi import (APIRouter, HTTPException, status, Depends, Security)
 from fastapi.security import (
     OAuth2PasswordBearer,
     OAuth2PasswordRequestForm,
@@ -13,8 +13,9 @@ from passlib.context import CryptContext
 from pydantic import ValidationError
 
 from ..db import db
-from ..dependencies.functional import get_current_active_group
 from ..schemas.auth import EmployeeInDB, GuestInDB, TokenData, Token
+from ..schemas.employee import Employee
+from ..schemas.guest import Guest
 from ..schemas.user import User
 
 SECOND = 60
@@ -29,9 +30,9 @@ pwd_context = CryptContext(schemes=['bcrypt'], deprecated='auto')
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl='/auth/token',
                                      scopes={
                                          'me': 'Read information about the current user.',
-                                         'admin': 'Read information apis for admin.',
-                                         'student': 'Read information apis for student.',
-                                         'teacher': 'Read information apis for teacher.'
+                                         'supervisor': 'Read information apis for supervisor.',
+                                         'employee': 'Read information apis for employee.',
+                                         'guest': 'Read information apis for guest.'
                                      })
 
 
@@ -56,7 +57,7 @@ async def authenticate_user(username: str, password: str):
     if not user:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST,
                             detail='Invalid username or not register.')
-    if not verify_password(password, user.hashed_password):
+    if not verify_password(password, user.hashedPassword):
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN,
                             detail='Invalid password please try again.')
     return user
@@ -105,6 +106,88 @@ async def get_current_user(
         detail='Not enough permissions',
         headers={'WWW-Authenticate': authenticate_value},
     )
+
+
+async def get_current_active_supervisor(
+        current_user: Employee = Security(get_current_user, scopes=['me', 'supervisor'])
+):
+    """
+    inactive user config this here:
+        - disabled
+    """
+    if current_user.disabled:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST,
+                            detail='Inactive user')
+    if current_user.role is None:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED,
+                            detail='Unauthorized')
+    if current_user.role != 'supervisor':
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN,
+                            detail='Not enough permissions')
+    return current_user
+
+
+async def get_current_active_employee(
+        current_user: Employee = Security(get_current_user, scopes=['me', 'employee'])
+):
+    """
+    inactive user config this here:
+        - disabled
+    """
+    if current_user.disabled:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST,
+                            detail='Inactive user')
+    if current_user.role is None:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED,
+                            detail='Unauthorized')
+    if current_user.role != 'supervisor' or current_user.role != 'employee':
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN,
+                            detail='Not enough permissions')
+    return current_user
+
+
+async def get_current_active_guest(
+        current_user: Guest = Security(get_current_user, scopes=['me', 'guest'])
+):
+    """
+    inactive user config this here:
+        - disabled
+    """
+    if current_user.disabled:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST,
+                            detail='Inactive user')
+    if current_user.role is None:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED,
+                            detail='Unauthorized')
+    if current_user.role != 'guest':
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN,
+                            detail='Not enough permissions')
+    return current_user
+
+
+async def get_current_active_group(
+        current_user: User = Security(get_current_user, scopes=['me', 'supervisor', 'employee', 'guest'])
+):
+    """
+    inactive user config this here:
+        - disabled
+    """
+    if current_user.disabled:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST,
+                            detail='Inactive user')
+    if current_user.role is None:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED,
+                            detail='Unauthorized')
+    return current_user
+
+
+def has_scope(required_role: str = Depends(get_current_user)):
+    def _has_scope(user: User = Depends(get_current_user)):
+        if user.role != required_role:
+            raise HTTPException(status_code=403, detail="Insufficient scope")
+        return user
+
+    return _has_scope
 
 
 @authenticate.post('/token', response_model=Token)

@@ -3,8 +3,8 @@ from typing import Union, List
 from fastapi import APIRouter, Query, HTTPException, Depends, status, Path
 from fastapi.encoders import jsonable_encoder
 
+from .auth import get_current_active_supervisor, get_password_hash
 from ..db import db
-from ..routes.auth import get_current_active_employee
 from ..schemas.employee import RegisterEmployee, UpdateEmployee, TableListEmployee, Employee
 
 router = APIRouter()
@@ -33,7 +33,7 @@ async def read_users(
                                         title='Limit or end items in collection', ge=1),
         position: List[str] = Query(None, description="Filter by position"),
         role: List[str] = Query(None, description="Filter by role"),
-        current_user: Employee = Depends(get_current_active_employee),
+        current_user: Employee = Depends(get_current_active_supervisor),
 ):
     """
     find employee following condition below
@@ -46,31 +46,42 @@ async def read_users(
     :return:
     """
     query = {}
-    total_count = db.get_collection_countable(collection=COLLECTION)
+    total_count = db.get_collection_countable(collection=COLLECTION, query=query)
     if position:
         query["position"] = {"$in": position}
     if role:
         query["type"] = {"$in": role}
 
-    users = await db.find(collection=COLLECTION, query=query)
-    stored_model = users.skip(skip).limit(limit)
-    stored_model = list(stored_model)
+    result = await db.find(collection=COLLECTION, query=query)
+    result = result.skip(skip).limit(limit)
+    employees = [order for order in result]
     result = {
         'counts': total_count,
         'skip': skip,
         'limit': limit,
-        'users': stored_model
+        'employees': employees
     }
-    if not stored_model:
+    if not employees:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='Not found item.')
     return result
+
+
+@router.post('/create/employee', response_model=RegisterEmployee)
+async def register_user(
+        register: RegisterEmployee = Depends(evaluate_duplicate_account),
+        current_user: Employee = Depends(get_current_active_supervisor)
+):
+    register.hashedPassword = get_password_hash(register.hashedPassword)
+    item_model = jsonable_encoder(register)
+    await db.insert_one(collection=COLLECTION, data=item_model)
+    return item_model
 
 
 @router.put('/update/employee/{uid}', response_model=UpdateEmployee)
 async def update_user(
         user: UpdateEmployee = Depends(evaluate_duplicate_account_update),
         uid: str = Path(title='User UID in database-collection for update user'),
-        current_user: Employee = Depends(get_current_active_employee),
+        current_user: Employee = Depends(get_current_active_supervisor),
 ):
     item_model = jsonable_encoder(user)
     query = {'uid': uid}
