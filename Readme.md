@@ -58,3 +58,16 @@ The system has the following user roles:
 
 ## Installation
 To install and run the Hotel Property Management System locally, follow these steps
+
+   1. Clone the repository:
+
+    git clone https://github.com/watcharap0n/hotel-service.git
+    cd hotel-service
+
+
+  2. Build docker image and run container
+
+    docker-compsoe up -d
+
+
+  3. Access the application api docs http://localhost:8080/api/docs

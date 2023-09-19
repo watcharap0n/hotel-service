@@ -16,4 +16,4 @@ COPY server .
 WORKDIR ../
 
 
-CMD ["uvicorn", "hotel_service.main:app", "--proxy-headers", "--host", "0.0.0.0", "--port", "8001"]
+CMD ["uvicorn", "hotel_service.main:app", "--proxy-headers", "--host", "0.0.0.0", "--port", "8080"]
