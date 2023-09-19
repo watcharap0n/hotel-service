@@ -1,0 +1,32 @@
+version: '3.7'
+
+services:
+  hotel_service:
+    container_name: hotel-backend-container
+    build: hotel_backend
+    image: kaneai/hotel-backend-service:latest
+    ports:
+      - "8080:8080"
+    networks:
+      - default
+    env_file:
+      - .backend.env
+
+  mongo:
+    container_name: mongo-db
+    image: mongo:5.0
+    ports:
+      - "27017:27017"
+    volumes:
+      - ./hotel_backend/server/db/data:/data/db
+    networks:
+      - default
+
+  # coming soon ...
+
+
+networks:
+  default:
+    external:
+      name:
+        microservice_network
