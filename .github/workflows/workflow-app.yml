@@ -1,4 +1,4 @@
-name: Test Framework Comparisons
+name: hotel-unit-test
 
 on:
   push:

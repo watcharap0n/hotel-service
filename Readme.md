@@ -4,6 +4,10 @@ The Hotel Property Management System is a web-based application designed for hot
 This system allows for the creation, assignment, and tracking of work orders within a hotel property. It also includes
 integration with LINE Messaging API for communication with employees.
 
+
+[![Build Status](https://github.com/watcharap0n/hotel-service/actions/workflows/workflow-app.yml/badge.svg)](https://github.com/watcharap0n/hotel-service/actions/workflows/workflow-app.yml)
+
+
 ### Table of Contents
 
 - Features
