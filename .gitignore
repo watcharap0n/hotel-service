@@ -8,3 +8,6 @@ Pipfile
 Pipfile.lock
 *.http
 hotel_backend/server/etc
+*node_modeules
+*package-lock.json
+hotel_frontend
