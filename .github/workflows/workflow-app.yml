@@ -34,7 +34,7 @@ jobs:
           python -m pip install --upgrade pip
           pip install flake8 pytest
           pip install cryptography==38.0.4
-          if [ -f unit-test-service/requirements.txt ]; then pip install -r unit-test-service/requirements.txt; fi
+          if [ -f hotel_backend/requirements.txt ]; then pip install -r hotel_backend/requirements.txt; fi
 
       - name: Lint with flake8
         run: |
@@ -80,7 +80,7 @@ jobs:
       - name: Build and push Docker image
         uses: docker/build-push-action@ad44023a93711e3deb337508980b4b5e9bcdc5dc
         with:
-          context: unit-test-service
+          context: hotel-service
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
